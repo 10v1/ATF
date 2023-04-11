@@ -24,7 +24,7 @@ ARM_ARCH_FEATURE		:= none
 
 # ARM Architecture major and minor versions: 8.0 by default.
 ARM_ARCH_MAJOR			:= 8
-ARM_ARCH_MINOR			:= 0
+ARM_ARCH_MINOR			:= 4
 
 # Base commit to perform code check on
 BASE_COMMIT			:= origin/master
@@ -175,7 +175,7 @@ GICV2_G0_FOR_EL3		:= 0
 
 # Route External Aborts to EL3. Disabled by default; External Aborts are handled
 # by lower ELs.
-HANDLE_EA_EL3_FIRST		:= 0
+HANDLE_EA_EL3_FIRST		:= 1
 
 # Secure hash algorithm flag, accepts 3 values: sha256, sha384 and sha512.
 # The default value is sha256.
@@ -299,7 +299,7 @@ V				:= 0
 WARMBOOT_ENABLE_DCACHE_EARLY	:= 0
 
 # Build option to enable/disable the Statistical Profiling Extensions
-ENABLE_SPE_FOR_LOWER_ELS	:= 1
+ENABLE_SPE_FOR_LOWER_ELS	:= 0
 
 # SPE is only supported on AArch64 so disable it on AArch32.
 ifeq (${ARCH},aarch32)
@@ -317,7 +317,7 @@ ENABLE_AMU_FCONF		:= 0
 AMU_RESTRICT_COUNTERS		:= 0
 
 # Enable SVE for non-secure world by default
-ENABLE_SVE_FOR_NS		:= 1
+ENABLE_SVE_FOR_NS		:= 0
 ENABLE_SVE_FOR_SWD		:= 0
 
 # SME defaults to disabled
