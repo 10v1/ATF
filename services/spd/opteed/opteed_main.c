@@ -230,23 +230,34 @@ static uintptr_t opteed_smc_handler(uint32_t smc_fid,
 	 */
 	uint32_t smc_imm = 0;
 	uint32_t exit_value = 0;
-	uint32_t is_kvm_trap = 0;
+	uint32_t is_kvm_trap = 0, is_non_secure = 0;
+	uint32_t fun_number = 0;
+	uint32_t selector = 0;
 
 	smc_imm = read_esr_el3() & 0xffff;
-	if (smc_imm != 0) {
+	fun_number = smc_fid & 0xffff;
+	// non secure and kvm trap, x2 stores the smc_imm, secure and kvm trap, smc_imm is original
+	if(smc_imm == 0 && fun_number == 0x1) is_non_secure = 1;
+	if (smc_imm != 0 || is_non_secure) {
 		is_kvm_trap = 1;
-		exit_value = smc_imm - 1;
+		exit_value = is_non_secure ? x2 -1 : smc_imm -1;
 	}
-
+	selector = is_non_secure ? x2 : smc_imm;
+	//x1 is abnormal if we use kernel 5.17
+	printf("in opteed_smc_handler, smc_imm 0x%x, and smc_fid 0x%x, x1 0x%lx, caller non-secure: 0x%lx, smc number 0x%lx\n", smc_imm, smc_fid, x1, flags, x2);
 	if (is_kvm_trap) {
 		if (is_caller_non_secure(flags)) {
-			assert(handle == cm_get_context(NON_SECURE));
+			assert(handle == cm_get_context(NON_SECURE));	//handle指向CPU结构体
 
-			cm_el2_sysregs_context_save(NON_SECURE, 1);
+			cm_el2_sysregs_context_save(NON_SECURE, 1);		//保存non-secure el2 sys寄存器
 
 			assert(&optee_ctx->cpu_ctx == cm_get_context(SECURE));
+			gp_regs_t* gpregs_secure = get_gpregs_ctx(&optee_ctx->cpu_ctx);
+			gp_regs_t* gpregs_nonsecure = get_gpregs_ctx(handle);
+			printf("begining, x0 0x%lx x1 0x%lx in SECURE CPU CTX\n", read_ctx_reg(gpregs_secure, CTX_GPREG_X0), read_ctx_reg(gpregs_secure, CTX_GPREG_X1));
+			printf("begining, x0 0x%lx x1 0x%lx in NONSECURE CPU CTX\n", read_ctx_reg(gpregs_nonsecure, CTX_GPREG_X0), read_ctx_reg(gpregs_nonsecure, CTX_GPREG_X1));
 
-			switch (smc_imm) {
+			switch (selector) {
 				case SMC_IMM_KVM_TO_S_VISOR_TRAP:
 					cm_set_elr_el3(SECURE, (uint64_t)
 							&optee_vector_table->kvm_trap_smc_entry);
@@ -267,12 +278,13 @@ static uintptr_t opteed_smc_handler(uint32_t smc_fid,
 
 			cm_set_next_eret_context(SECURE);
 
-			switch (smc_imm) {
+			switch (selector) {
 				case SMC_IMM_KVM_TO_S_VISOR_TRAP:
 					break;
 				case SMC_IMM_KVM_TO_S_VISOR_SHARED_MEMORY_REGISTER:
 					memcpy(get_gpregs_ctx(&optee_ctx->cpu_ctx),
 							get_gpregs_ctx(handle), sizeof(gp_regs_t));
+					printf("after, x0 0x%lx x1 0x%lx in SECURE CPU CTX\n", read_ctx_reg(gpregs_secure, CTX_GPREG_X0), read_ctx_reg(gpregs_secure, CTX_GPREG_X1));
 					break;
 				case SMC_IMM_KVM_TO_S_VISOR_SHARED_MEMORY_HANDLE:
 					break;
@@ -296,7 +308,7 @@ static uintptr_t opteed_smc_handler(uint32_t smc_fid,
 			/* Restore non-secure state */
 			cm_el2_sysregs_context_restore(NON_SECURE, 1);
 			cm_set_next_eret_context(NON_SECURE);
-			switch (smc_imm) {
+			switch (selector) {
 				case SMC_IMM_S_VISOR_TO_KVM_TRAP_SYNC: 
 				case SMC_IMM_S_VISOR_TO_KVM_TRAP_IRQ:
 					//skip the first eight handler
@@ -385,6 +397,7 @@ static uintptr_t opteed_smc_handler(uint32_t smc_fid,
 		/*
 		 * Stash the OPTEE entry points information. This is done
 		 * only once on the primary cpu
+		 * It returns (s_visor_handler_table) in x1
 		 */
 		assert(optee_vector_table == NULL);
 		optee_vector_table = (optee_vectors_t *) x1;

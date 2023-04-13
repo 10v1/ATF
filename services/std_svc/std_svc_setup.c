@@ -100,6 +100,7 @@ static uintptr_t std_svc_smc_handler(uint32_t smc_fid,
 	 */
 	if (is_psci_fid(smc_fid)) {
 		uint64_t ret;
+	printf("in std_svc_smc_handler, smc_fid: 0x%x, caller non-secure: 0x%lx\n", smc_fid, flags);
 
 #if ENABLE_RUNTIME_INSTRUMENTATION
 
@@ -115,6 +116,7 @@ static uintptr_t std_svc_smc_handler(uint32_t smc_fid,
 
 		ret = psci_smc_handler(smc_fid, x1, x2, x3, x4,
 		    cookie, handle, flags);
+		printf("return from psci_smc_handler, ret val 0x%lx\n", ret);
 
 #if ENABLE_RUNTIME_INSTRUMENTATION
 		PMF_CAPTURE_TIMESTAMP(rt_instr_svc,

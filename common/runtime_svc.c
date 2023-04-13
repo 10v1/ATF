@@ -148,6 +148,7 @@ void __init runtime_svc_init(void)
 						  service->call_type);
 		assert(start_idx <= end_idx);
 		assert(end_idx < MAX_RT_SVCS);
+		printf("service initing, name: %s, start_index %02x, end_index %02x in indices\n", service->name, start_idx, end_idx);
 		for (; start_idx <= end_idx; start_idx++)
 			rt_svc_descs_indices[start_idx] = index;
 	}
