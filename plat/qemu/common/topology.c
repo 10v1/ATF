@@ -10,6 +10,8 @@
 
 #include <arch.h>
 
+#include <stdio.h>
+
 #include "qemu_private.h"
 
 /* The power domain tree descriptor */

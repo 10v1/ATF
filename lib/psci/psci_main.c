@@ -335,7 +335,6 @@ int psci_node_hw_state(u_register_t target_cpu,
 
 int psci_features(unsigned int psci_fid)
 {
-	printf("get psci_features, psci_fid is 0x%x\n", psci_fid);
 	unsigned int local_caps = psci_caps;
 
 	if (psci_fid == SMCCC_VERSION)
